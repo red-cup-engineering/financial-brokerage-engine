@@ -1,0 +1,28 @@
+{
+  "name": "@red-cup-engineering/financial-brokerage-engine",
+  "version": "0.1.2-dev.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/engine.mjs",
+    "./account-authority": "./src/account-authority.mjs"
+  },
+  "scripts": {
+    "check": "node --check src/engine.mjs"
+  },
+  "dependencies": {
+    "@red-cup-engineering/computer-code-engine": "^0.1.0",
+    "@red-cup-engineering/semiotic-eavt-engineering-services-section": "^0.6.0",
+    "@red-cup-engineering/semiotic-content-address-system": "^0.1.5",
+    "@red-cup-engineering/financial-engine": "^0.1.0"
+  },
+  "files": [
+    "src/"
+  ],
+  "description": "Records independent brokerage outcome witnesses and market events in a content-addressed journal.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/financial-brokerage-engine.git"
+  },
+  "private": false,
+  "license": "MIT"
+}
