@@ -71,26 +71,26 @@ function configuration(env, dependencies) {
   requireValue(isObject(env) && isObject(dependencies), invalid);
   const now = dependencies.now ?? (() => new Date().toISOString());
   requireValue(typeof now === 'function', invalid);
-  let journal = dependencies.journal;
-  if (journal == null) {
+  let log = dependencies.journal;
+  if (log == null) {
     const dataRoot = env.FINANCIAL_BROKERAGE_DATA_ROOT;
     if (!isText(dataRoot)) throw new Error('FINANCIAL_BROKERAGE_DATA_ROOT is required');
     const root = resolve(dataRoot);
-    journal = {
+    log = {
       has: record => has(root, 'financial-brokerage', addressOf(record)),
       put: record => ({ id: put(root, 'financial-brokerage', record) }),
     };
   }
-  requireValue(isObject(journal) && typeof journal.has === 'function' &&
-    typeof journal.put === 'function', invalid);
-  return { journal, now };
+  requireValue(isObject(log) && typeof log.has === 'function' &&
+    typeof log.put === 'function', invalid);
+  return { journal: log, now };
 }
 
-async function persist(journal, record) {
-  const present = journal.has(record);
+async function persist(log, record) {
+  const present = log.has(record);
   requireValue(typeof present === 'boolean', 'brokerage-journal-result-invalid');
   if (present) return null;
-  const result = await journal.put(record);
+  const result = await log.put(record);
   requireValue(isObject(result) && isText(result.id), 'brokerage-journal-result-invalid');
   const receipt = snapshot(result);
   requireValue(isObject(receipt) && isText(receipt.id), 'brokerage-journal-result-invalid');
@@ -98,7 +98,7 @@ async function persist(journal, record) {
 }
 
 export function createOutcomeRecorder(env = process.env, dependencies = {}) {
-  const { journal, now } = configuration(env, dependencies);
+  const { journal: log, now } = configuration(env, dependencies);
   return async function recordOutcome(input) {
     requireValue(isObject(input), 'outcome-input-required');
     // Only attestation fields are read; ignored payloads need not be serializable.
@@ -107,7 +107,7 @@ export function createOutcomeRecorder(env = process.env, dependencies = {}) {
       inputs: input.inputs, output: input.output, externalEvidence: input.externalEvidence,
       observedAt: input.observedAt ?? now(),
     });
-    const recordReceipt = await persist(journal, witness);
+    const recordReceipt = await persist(log, witness);
     return freeze({
       type: 'RecordedBrokerageOutcome', version: 1,
       witness, graph: witness.id, recordReceipt,
@@ -120,7 +120,7 @@ export function createMarketEventRecorder(options, env = process.env, dependenci
     options.originatingActor !== BROKERAGE_WITNESS_ACTOR && isText(options.nodeId),
   'market-event-origin-required');
   const { originatingActor, nodeId } = options;
-  const { journal, now } = configuration(env, dependencies);
+  const { journal: log, now } = configuration(env, dependencies);
   const recordMarketEvent = async event => {
     requireValue(isObject(event), 'market-event-required');
     const recordedAt = event.recordedAt ?? event.confirmedAt ?? event.attemptedAt ?? now();
@@ -130,7 +130,7 @@ export function createMarketEventRecorder(options, env = process.env, dependenci
       witnessActor: BROKERAGE_WITNESS_ACTOR, originatingActor, nodeId,
       event, recordedAt, selfAttestation: false,
     });
-    const recordReceipt = await persist(journal, record);
+    const recordReceipt = await persist(log, record);
     return freeze({
       type: 'RecordedBrokerageMarketEvent', version: 1,
       id: record.id, graph: record.id, recordReceipt,
